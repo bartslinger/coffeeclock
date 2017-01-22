@@ -1,0 +1,701 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<model version="4.0.0" links="0">
+ <documentation>Coffeeclock</documentation>
+ <framework name="qpn"/>
+ <package name="AOs" stereotype="0x02">
+  <class name="Clock" superclass="qpn::QActive">
+   <attribute name="alarm_hours" type="uint8_t" visibility="0x02" properties="0x00"/>
+   <attribute name="alarm_minutes" type="uint8_t" visibility="0x02" properties="0x00"/>
+   <attribute name="time_hours" type="uint8_t" visibility="0x02" properties="0x00"/>
+   <attribute name="time_minutes" type="uint8_t" visibility="0x02" properties="0x00"/>
+   <statechart>
+    <initial target="../1/6">
+     <action>/* Obtain alarm time from EEPROM */
+
+//me-&gt;alarm_hours = EEPROM.read(0);
+//me-&gt;alarm_minutes = EEPROM.read(1);
+me-&gt;alarm_hours = 0U;
+me-&gt;alarm_minutes = 0U;
+
+/* Make sure it is within bounds */
+if (me-&gt;alarm_hours &gt; 23) me-&gt;alarm_hours = 23;
+if (me-&gt;alarm_minutes &gt; 59) me-&gt;alarm_minutes = 59;
+
+/* Set initial time */
+me-&gt;time_hours = 12U;
+me-&gt;time_minutes = 0U;</action>
+     <initial_glyph conn="102,2,4,1,42,-6">
+      <action box="0,-2,10,2"/>
+     </initial_glyph>
+    </initial>
+    <state name="on">
+     <tran trig="SET_TIME">
+      <action>uint32_t param = Q_PAR(me);
+
+uint8_t minutes = param;
+uint8_t hours   = param &gt;&gt; 8;
+
+me-&gt;time_minutes = minutes;
+me-&gt;time_hours = hours;
+QACTIVE_POST_X((QActive *)&amp;AO_Clock, 1U, TIME_UPDATED_SIG, 0U);</action>
+      <tran_glyph conn="5,116,3,-1,16">
+       <action box="0,-2,10,2"/>
+      </tran_glyph>
+     </tran>
+     <tran trig="COMPUTER_DISCONNECTED" target="../6">
+      <tran_glyph conn="5,119,3,2,66,-61,18,-5">
+       <action box="0,-2,21,2"/>
+      </tran_glyph>
+     </tran>
+     <tran trig="TURN_OFF" target="../../2">
+      <tran_glyph conn="5,122,3,2,119,-108">
+       <action box="0,-2,17,2"/>
+      </tran_glyph>
+     </tran>
+     <tran trig="ALARM_SET_FROM_COMPUTER">
+      <action>uint32_t param = Q_PAR(me);
+
+uint8_t minutes = param;
+uint8_t hours   = param &gt;&gt; 8;
+
+me-&gt;alarm_minutes = minutes;
+me-&gt;alarm_hours = hours;</action>
+      <tran_glyph conn="5,126,3,-1,17">
+       <action box="0,-2,30,2"/>
+      </tran_glyph>
+     </tran>
+     <state name="alarm">
+      <entry>digitalWrite(LED_ALARM, HIGH);</entry>
+      <exit>digitalWrite(LED_ALARM, LOW);</exit>
+      <state name="set_minutes">
+       <exit>BSP_displayTime(me-&gt;alarm_hours, me-&gt;alarm_minutes);</exit>
+       <tran trig="ROTARY_PUSH" target="../../1">
+        <tran_glyph conn="11,90,3,1,37,8,-9">
+         <action box="0,-2,11,2"/>
+        </tran_glyph>
+       </tran>
+       <tran trig="ROTARY_INC" target="../3">
+        <action>me-&gt;alarm_minutes++;
+if (me-&gt;alarm_minutes &gt; 59) {
+    me-&gt;alarm_minutes = 0;
+}</action>
+        <tran_glyph conn="11,61,3,0,22,6">
+         <action box="0,-2,10,2"/>
+        </tran_glyph>
+       </tran>
+       <tran trig="ROTARY_DEC" target="../3">
+        <action>me-&gt;alarm_minutes--;
+if (me-&gt;alarm_minutes &gt; 59) {
+    me-&gt;alarm_minutes = 59;
+}</action>
+        <tran_glyph conn="11,64,3,0,18,3">
+         <action box="0,-2,10,2"/>
+        </tran_glyph>
+       </tran>
+       <state name="minutes_blink_on">
+        <entry>QActive_armX(&amp;me-&gt;super, 0U, ALARM_SET_BLINK_TIME, 0U);
+BSP_displayTime(me-&gt;alarm_hours, me-&gt;alarm_minutes);</entry>
+        <exit>QActive_disarmX(&amp;me-&gt;super, 0U);</exit>
+        <tran trig="Q_TIMEOUT" target="../../4">
+         <tran_glyph conn="18,73,3,1,22,7,-2">
+          <action box="0,-2,10,2"/>
+         </tran_glyph>
+        </tran>
+        <state_glyph node="18,67,20,9">
+         <entry box="1,2,6,2"/>
+         <exit box="1,4,6,2"/>
+        </state_glyph>
+       </state>
+       <state name="minutes_blink_off">
+        <entry>QActive_armX(&amp;me-&gt;super, 0U, ALARM_SET_BLINK_TIME, 0U);
+BSP_displayHideMinutes();</entry>
+        <exit>QActive_disarmX(&amp;me-&gt;super, 0U);</exit>
+        <tran trig="Q_TIMEOUT" target="../../3">
+         <tran_glyph conn="18,84,3,3,-2,-10,2">
+          <action box="0,-2,10,2"/>
+         </tran_glyph>
+        </tran>
+        <state_glyph node="18,78,20,8">
+         <entry box="1,2,6,2"/>
+         <exit box="1,4,6,2"/>
+        </state_glyph>
+       </state>
+       <state_glyph node="11,55,35,38">
+        <exit box="1,2,6,2"/>
+       </state_glyph>
+      </state>
+      <state name="show_alarm">
+       <entry>QActive_armX(&amp;me-&gt;super, 0U, BSP_TICKS_PER_SEC*0.5, 0U);
+
+uint32_t param = (me-&gt;alarm_hours &lt;&lt; 8) | (me-&gt;alarm_minutes);
+/* Save alarm time in EEPROM */
+QACTIVE_POST_X((QActive *)&amp;AO_Computer, 1U, ALARM_SET_SIG, param);
+//EEPROM.write(0, me-&gt;alarm_hours);
+//EEPROM.write(1, me-&gt;alarm_minutes);</entry>
+       <exit>QActive_disarmX(&amp;me-&gt;super, 0U);</exit>
+       <tran trig="ROTARY_PUSH" target="../../../5">
+        <tran_glyph conn="12,103,3,2,55,-70">
+         <action box="0,-2,10,2"/>
+        </tran_glyph>
+       </tran>
+       <tran trig="Q_TIMEOUT" target="../../../5">
+        <tran_glyph conn="12,105,3,2,57,-72">
+         <action box="0,-2,10,2"/>
+        </tran_glyph>
+       </tran>
+       <state_glyph node="12,96,27,12">
+        <entry box="1,2,6,2"/>
+        <exit box="1,4,6,2"/>
+       </state_glyph>
+      </state>
+      <state name="set_hours">
+       <exit>BSP_displayTime(me-&gt;alarm_hours, me-&gt;alarm_minutes);</exit>
+       <tran trig="ROTARY_INC" target="../3">
+        <action>me-&gt;alarm_hours++;
+if (me-&gt;alarm_hours &gt; 23) {
+    me-&gt;alarm_hours = 0;
+}</action>
+        <tran_glyph conn="12,21,3,0,16,5">
+         <action box="0,-2,10,2"/>
+        </tran_glyph>
+       </tran>
+       <tran trig="ROTARY_DEC" target="../3">
+        <action>me-&gt;alarm_hours--;
+if (me-&gt;alarm_hours &gt; 23) {
+    me-&gt;alarm_hours = 23;
+}</action>
+        <tran_glyph conn="12,24,3,0,13,2">
+         <action box="0,-2,10,2"/>
+        </tran_glyph>
+       </tran>
+       <tran trig="ROTARY_PUSH" target="../../0/3">
+        <tran_glyph conn="12,48,3,1,37,21,-11">
+         <action box="0,-2,11,2"/>
+        </tran_glyph>
+       </tran>
+       <state name="hours_blink_on">
+        <entry>QActive_armX(&amp;me-&gt;super, 0U, ALARM_SET_BLINK_TIME, 0U);
+BSP_displayTime(me-&gt;alarm_hours, me-&gt;alarm_minutes);</entry>
+        <exit>QActive_disarmX(&amp;me-&gt;super, 0U);</exit>
+        <tran trig="Q_TIMEOUT" target="../../4">
+         <tran_glyph conn="16,32,3,1,22,7,-2">
+          <action box="0,-2,10,2"/>
+         </tran_glyph>
+        </tran>
+        <state_glyph node="16,26,20,9">
+         <entry box="1,2,6,2"/>
+         <exit box="1,4,6,2"/>
+        </state_glyph>
+       </state>
+       <state name="hours_blink_off">
+        <entry>QActive_armX(&amp;me-&gt;super, 0U, ALARM_SET_BLINK_TIME, 0U);
+BSP_displayHideHours();</entry>
+        <exit>QActive_disarmX(&amp;me-&gt;super, 0U);</exit>
+        <tran trig="Q_TIMEOUT" target="../../3">
+         <tran_glyph conn="16,43,3,3,-2,-10,2">
+          <action box="0,-2,10,2"/>
+         </tran_glyph>
+        </tran>
+        <state_glyph node="16,37,20,8">
+         <entry box="1,2,6,2"/>
+         <exit box="1,4,6,2"/>
+        </state_glyph>
+       </state>
+       <state_glyph node="12,13,34,38">
+        <exit box="1,2,6,2"/>
+       </state_glyph>
+      </state>
+      <state_glyph node="8,9,43,102">
+       <entry box="1,2,6,2"/>
+       <exit box="1,4,6,2"/>
+      </state_glyph>
+     </state>
+     <state name="time">
+      <entry>digitalWrite(LED_TIME, HIGH);
+BSP_displayTime(me-&gt;time_hours, me-&gt;time_minutes);</entry>
+      <exit>digitalWrite(LED_TIME, LOW);</exit>
+      <tran trig="ROTARY_PUSH" target="../../4/2/3">
+       <tran_glyph conn="63,21,3,1,-7,8,-20">
+        <action box="0,-2,12,2"/>
+       </tran_glyph>
+      </tran>
+      <tran trig="TIME_UPDATED">
+       <action>BSP_displayTime(me-&gt;time_hours, me-&gt;time_minutes);</action>
+       <tran_glyph conn="63,17,3,-1,12">
+        <action box="0,-2,12,2"/>
+       </tran_glyph>
+      </tran>
+      <state_glyph node="63,9,26,24">
+       <entry box="1,2,6,2"/>
+       <exit box="1,4,6,2"/>
+      </state_glyph>
+     </state>
+     <state name="disconnected">
+      <entry brief="display dashes">BSP_displayDashes();</entry>
+      <tran trig="TIME_UPDATED" target="../../5">
+       <tran_glyph conn="73,47,3,2,-2,-14">
+        <action box="0,-2,15,2"/>
+       </tran_glyph>
+      </tran>
+      <state_glyph node="73,40,23,13">
+       <entry box="1,2,13,2"/>
+      </state_glyph>
+     </state>
+     <state_glyph node="5,4,95,127"/>
+    </state>
+    <state name="off">
+     <entry brief="display off">BSP_displayOff();</entry>
+     <tran trig="TURN_ON" target="../../1/6">
+      <tran_glyph conn="106,11,3,1,16,36,-26">
+       <action box="0,-2,16,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="106,5,22,9">
+      <entry box="1,2,13,2"/>
+     </state_glyph>
+    </state>
+    <state_diagram size="192,190"/>
+   </statechart>
+  </class>
+  <class name="Computer" superclass="qpn::QActive">
+   <statechart>
+    <initial target="../1">
+     <initial_glyph conn="4,2,5,3,2,9,2">
+      <action box="0,-2,10,2"/>
+     </initial_glyph>
+    </initial>
+    <state name="disconnected">
+     <entry>QACTIVE_POST((QActive *)&amp;AO_Clock, COMPUTER_DISCONNECTED_SIG, 0U);
+digitalWrite(LED_ACTIVATED, LOW);
+digitalWrite(LED_CONNECTED, LOW);</entry>
+     <tran trig="COMPUTER_ALIVE" target="../../2">
+      <tran_glyph conn="8,16,3,3,38">
+       <action box="0,-2,15,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="8,9,23,32">
+      <entry box="1,2,6,2"/>
+     </state_glyph>
+    </state>
+    <state name="connected">
+     <entry>QActive_armX(&amp;me-&gt;super, 0U, COMPUTER_SIGNAL_TIMEOUT, 0U);
+//digitalWrite(LED_ALARM, HIGH);
+Serial.println(&quot;ALARM?&quot;);</entry>
+     <exit>QActive_disarmX(&amp;me-&gt;super, 0U);
+//digitalWrite(LED_ALARM, LOW);</exit>
+     <tran trig="Q_TIMEOUT" target="../../1">
+      <tran_glyph conn="46,22,3,1,20,2,-35">
+       <action box="0,-2,10,2"/>
+      </tran_glyph>
+     </tran>
+     <tran trig="COMPUTER_ALIVE">
+      <action>QActive_armX(&amp;me-&gt;super, 0U, COMPUTER_SIGNAL_TIMEOUT, 0U);</action>
+      <tran_glyph conn="46,29,3,-1,19">
+       <action box="0,-2,15,2"/>
+      </tran_glyph>
+     </tran>
+     <tran trig="ARM_BUTTON_PRESS">
+      <action>Serial.println(&quot;ARM&quot;);</action>
+      <tran_glyph conn="46,34,3,-1,19">
+       <action box="0,-2,17,2"/>
+      </tran_glyph>
+     </tran>
+     <tran trig="ALARM_SET">
+      <action>uint32_t param = Q_PAR(me);
+
+uint8_t minutes = param;
+uint8_t hours   = param &gt;&gt; 8;
+
+Serial.print(&quot;ALARM_SET=&quot;);
+if (hours &lt; 10) Serial.print(0);
+Serial.print(hours);
+Serial.print(&quot;:&quot;);
+if (minutes &lt; 10) Serial.print(0);
+Serial.println(minutes);</action>
+      <tran_glyph conn="46,41,3,-1,19">
+       <action box="0,-2,10,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="46,9,42,48">
+      <entry box="1,2,6,2"/>
+      <exit box="1,4,6,2"/>
+     </state_glyph>
+    </state>
+    <state_diagram size="100,66"/>
+   </statechart>
+  </class>
+  <class name="ArmButton" superclass="qpn::QActive">
+   <statechart>
+    <initial target="../1">
+     <initial_glyph conn="3,2,4,3,7,6">
+      <action box="0,2,10,2"/>
+     </initial_glyph>
+    </initial>
+    <state name="unpressed">
+     <tran trig="ARM_BUTTON_PRESS" target="../../2">
+      <tran_glyph conn="9,12,3,3,35">
+       <action box="0,-2,18,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="9,7,25,16"/>
+    </state>
+    <state name="pressed">
+     <entry>QActive_armX(&amp;me-&gt;super, 0U, ARM_BUTTON_TIMEOUT, 0U);
+//digitalWrite(LED_ACTIVATED, HIGH);
+QACTIVE_POST_X((QActive *)&amp;AO_Computer, 1U, ARM_BUTTON_PRESS_SIG, 0U);</entry>
+     <exit>QActive_disarmX(&amp;me-&gt;super, 0U);</exit>
+     <tran trig="Q_TIMEOUT">
+      <choice target="../../../3">
+       <guard brief="still pressed">((PIND &amp; _BV(DDD5)) == 0)</guard>
+       <choice_glyph conn="57,28,4,0,4">
+        <action box="1,1,10,2"/>
+       </choice_glyph>
+      </choice>
+      <choice target="../../../1">
+       <guard>else</guard>
+       <choice_glyph conn="57,28,5,2,-33,-5">
+        <action box="-6,-2,10,2"/>
+       </choice_glyph>
+      </choice>
+      <tran_glyph conn="44,19,3,-1,13,9">
+       <action box="0,-2,10,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="44,7,26,16">
+      <entry box="1,2,6,2"/>
+      <exit box="1,4,6,2"/>
+     </state_glyph>
+    </state>
+    <state name="waiting_for_release">
+     <tran trig="ARM_BUTTON_RELEASE" target="../../4">
+      <tran_glyph conn="44,39,3,1,-11">
+       <action box="0,-2,19,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="44,32,26,17"/>
+    </state>
+    <state name="after_release">
+     <entry>QActive_armX(&amp;me-&gt;super, 0U, ARM_BUTTON_TIMEOUT, 0U);
+</entry>
+     <exit>QActive_disarmX(&amp;me-&gt;super, 0U);</exit>
+     <tran trig="Q_TIMEOUT" target="../../1">
+      <tran_glyph conn="10,44,3,2,13,-21">
+       <action box="0,-2,10,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="10,35,23,12">
+      <entry box="1,2,6,2"/>
+      <exit box="1,4,6,2"/>
+     </state_glyph>
+    </state>
+    <state_diagram size="80,50"/>
+   </statechart>
+  </class>
+ </package>
+ <directory name=".">
+  <file name="coffeeclock.ino">
+   <text>#include &quot;qpn.h&quot;
+#include &quot;Arduino.h&quot;
+#include &lt;EEPROM.h&gt;
+#include &lt;TM1637Display.h&gt;
+
+Q_DEFINE_THIS_MODULE(&quot;coffeeclock&quot;)
+
+enum CoffeeClockSignals {
+    ROTARY_INC_SIG = Q_USER_SIG,
+    ROTARY_DEC_SIG,
+    ROTARY_PUSH_SIG,
+    DISPLAY_SET_SIG,
+    SET_TIME_SIG,
+    TIME_UPDATED_SIG,
+    COMPUTER_ALIVE_SIG,
+    COMPUTER_DISCONNECTED_SIG,
+    TURN_ON_SIG,
+    TURN_OFF_SIG,
+    ARM_BUTTON_PRESS_SIG,
+    ARM_BUTTON_RELEASE_SIG,
+    ALARM_SET_SIG,
+    ALARM_SET_FROM_COMPUTER_SIG,
+    MAX_SIG
+};
+
+//============================================================================
+// Declare Active Objects
+$declare(AOs::Clock)
+$declare(AOs::Computer)
+$declare(AOs::ArmButton)
+
+// Instantiate Active Objects and event queues
+Clock         AO_Clock;
+static QEvt   l_clockQueue[10];
+
+Computer      AO_Computer;
+static QEvt   l_computerQueue[10];
+
+ArmButton     AO_ArmButton;
+static QEvt   l_armButtonQueue[2];
+
+//============================================================================
+// QF_active[] array defines all active object control blocks
+QActiveCB const Q_ROM QF_active[] = {
+    { (QActive *)0,                (QEvt *)0,              0U                             },
+    { (QActive *)&amp;AO_Clock,        l_clockQueue,           Q_DIM(l_clockQueue)            },
+    { (QActive *)&amp;AO_Computer,     l_computerQueue,        Q_DIM(l_computerQueue)         },
+    { (QActive *)&amp;AO_ArmButton,    l_armButtonQueue,       Q_DIM(l_armButtonQueue)        },
+};
+
+//============================================================================
+// various constants for the application...
+enum {
+    BSP_TICKS_PER_SEC = 100, // number of system clock ticks in one second
+    SWITCH_ACTIVATE = 5,     // D5 = PD5
+    SWITCH_ONOFF = 12,       // D12 = PB4
+    LED_ACTIVATED = 6,
+    LED_CONNECTED = 7,
+    LED_TIME = 8,
+    LED_ALARM = 9,
+    ALARM_SET_BLINK_TIME = (BSP_TICKS_PER_SEC/2),
+    BAUD_RATE = 9600,
+    COMPUTER_SIGNAL_TIMEOUT = (unsigned int)(BSP_TICKS_PER_SEC*1.5),
+    ARM_BUTTON_TIMEOUT = (unsigned int)(BSP_TICKS_PER_SEC*0.1),
+    SERIAL_BUFFER_SIZE = 30,
+};
+
+//============================================================================
+
+TM1637Display display(11, 10);
+
+void BSP_displayTime(uint8_t hours, uint8_t minutes) {
+    display.showNumberDecEx(hours*100+minutes, 0x40, true);
+}
+
+void BSP_displayHideHours() {
+    uint8_t data[] = {0x00, 0x80};
+    display.setSegments(data, 2, 0);
+}
+
+void BSP_displayHideMinutes() {
+    uint8_t data[] = {0x00, 0x00};
+    display.setSegments(data, 2, 2);
+}
+
+void BSP_displayDashes() {
+    uint8_t data[] = {SEG_G, SEG_G, SEG_G, SEG_G};
+    display.setSegments(data);
+}
+
+void BSP_displayOff() {
+    uint8_t data[] = {0x00, 0x00, 0x00, 0x00};
+    display.setSegments(data);
+}
+
+struct serialBuffer {
+    char data[SERIAL_BUFFER_SIZE];
+    uint8_t idx = 0;
+} sBuf;
+
+void parseByte(uint8_t byte) {
+    sBuf.data[sBuf.idx] = byte;
+    /* Ignore carriage return */
+    if (byte == '\r') {
+        return;
+    }
+    sBuf.idx++;
+    if (byte == '\n') {
+        /* Parse message */
+        if (strncmp(sBuf.data, &quot;TIME=&quot;, 5) == 0) {
+            if (sBuf.idx == 11 &amp;&amp; sBuf.data[7] == ':') {
+                char number[] = &quot;00&quot;;
+                number[0] = sBuf.data[5];
+                number[1] = sBuf.data[6];
+                uint8_t hours = atoi(number);
+                number[0] = sBuf.data[8];
+                number[1] = sBuf.data[9];
+                uint8_t minutes = atoi(number);
+                uint32_t param = (hours &lt;&lt; 8) | minutes;
+                QACTIVE_POST_X_ISR((QActive *)&amp;AO_Clock, 1U, SET_TIME_SIG, param);
+                QACTIVE_POST_X_ISR((QActive *)&amp;AO_Computer, 1U, COMPUTER_ALIVE_SIG, 0U);
+            }
+        }
+        else if (strncmp(sBuf.data, &quot;ARMED=&quot;, 6) == 0) {
+            bool armed = (sBuf.data[6] == '1');
+            digitalWrite(LED_ACTIVATED, armed);
+        }
+        else if (strncmp(sBuf.data, &quot;CONNECTED=&quot;, 10) == 0) {
+            bool connected = (sBuf.data[10] == '1');
+            digitalWrite(LED_CONNECTED, connected);
+        }
+        else if (strncmp(sBuf.data, &quot;ALARM=&quot;, 6) == 0) {
+            if (sBuf.idx == 12 &amp;&amp; sBuf.data[8] == ':') {
+                char number[] = &quot;00&quot;;
+                number[0] = sBuf.data[6];
+                number[1] = sBuf.data[7];
+                uint8_t hours = atoi(number);
+                number[0] = sBuf.data[9];
+                number[1] = sBuf.data[10];
+                uint8_t minutes = atoi(number);
+                uint32_t param = (hours &lt;&lt; 8) | minutes;
+                QACTIVE_POST_X_ISR((QActive *)&amp;AO_Clock, 1U, ALARM_SET_FROM_COMPUTER_SIG, param);
+            }
+        }
+        sBuf.idx = 0;
+    }
+    if (sBuf.idx == SERIAL_BUFFER_SIZE) {
+        sBuf.idx = 0;
+    }
+}
+
+//============================================================================
+// Setup
+void setup() {
+    // initialize the QF-nano framework
+    QF_init(Q_DIM(QF_active));
+
+    // Initialize all active objects
+    QActive_ctor(&amp;AO_Clock.super, Q_STATE_CAST(&amp;Clock_initial));
+    QActive_ctor(&amp;AO_Computer.super, Q_STATE_CAST(&amp;Computer_initial));
+    QActive_ctor(&amp;AO_ArmButton.super, Q_STATE_CAST(&amp;ArmButton_initial));
+
+    /* Initialize LEDs */
+    pinMode(LED_ACTIVATED, OUTPUT);
+    digitalWrite(LED_ACTIVATED, LOW);
+    pinMode(LED_CONNECTED, OUTPUT);
+    digitalWrite(LED_CONNECTED, LOW);
+    pinMode(LED_TIME, OUTPUT);
+    digitalWrite(LED_TIME, LOW);
+    pinMode(LED_ALARM, OUTPUT);
+    digitalWrite(LED_ALARM, LOW);
+
+    /* Initialize switches */
+    pinMode(SWITCH_ACTIVATE, INPUT);
+    pinMode(SWITCH_ONOFF, INPUT);
+
+    display.setBrightness(0x0f);
+
+    Serial.begin(BAUD_RATE);   // set the highest stanard baud rate of 115200 bps
+}
+
+//============================================================================
+// Main loop
+void loop() {
+    QF_run();
+}
+//============================================================================
+// interrupts...
+ISR(TIMER2_COMPA_vect) {
+    QF_tickXISR(0); // process time events for tick rate 0
+    while (Serial.available() &gt; 0) {
+        parseByte(Serial.read());
+    }
+//    digitalWrite(LED_ACTIVATED, !digitalRead(SWITCH_ACTIVATE));
+//    digitalWrite(LED_CONNECTED, digitalRead(SWITCH_ONOFF));
+}
+
+volatile bool aFlag = 0U;
+volatile bool bFlag = 0U;
+
+ISR(INT0_vect) {
+    //rotaryInterrupt();
+    cli();
+    uint8_t reading = PIND &amp; 0xC;
+    if (reading == 0xC &amp;&amp; aFlag) {
+        QACTIVE_POST_X_ISR((QActive *)&amp;AO_Clock, 1U, ROTARY_DEC_SIG, 0U);
+        aFlag = false;
+        bFlag = false;
+    }
+    else if (reading == (1 &lt;&lt; 2)) {
+        bFlag = true;
+    }
+    sei();
+}
+
+ISR(INT1_vect) {
+    //rotaryInterrupt();
+    cli();
+    uint8_t reading = PIND &amp; 0xC;
+    if (reading == 0xC &amp;&amp; bFlag) {
+        QACTIVE_POST_X_ISR((QActive *)&amp;AO_Clock, 1U, ROTARY_INC_SIG, 0U);
+        aFlag = false;
+        bFlag = false;
+    }
+    else if (reading == (1 &lt;&lt; 3)) {
+        aFlag = true;
+    }
+    sei();
+}
+
+ISR(PCINT1_vect){
+    if ((PINC &amp; _BV(DDC1)) == 0) {
+        QACTIVE_POST_X_ISR((QActive *)&amp;AO_Clock, 1U, ROTARY_PUSH_SIG, 0U);
+    }
+}
+
+ISR(PCINT2_vect){
+    if ((PIND &amp; _BV(DDD5)) == 0) {
+        QACTIVE_POST_X_ISR((QActive *)&amp;AO_ArmButton, 1U, ARM_BUTTON_PRESS_SIG, 0U);
+    }
+    else {
+        //digitalWrite(LED_ACTIVATED, LOW);
+        QACTIVE_POST_X_ISR((QActive *)&amp;AO_ArmButton, 1U, ARM_BUTTON_RELEASE_SIG, 0U);
+    }
+}
+
+//============================================================================
+// QF callbacks...
+void QF_onStartup(void) {
+    // set Timer2 in CTC mode, 1/1024 prescaler, start the timer ticking...
+    TCCR2A = (1U &lt;&lt; WGM21) | (0U &lt;&lt; WGM20);
+    TCCR2B = (1U &lt;&lt; CS22 ) | (1U &lt;&lt; CS21) | (1U &lt;&lt; CS20); // 1/2^10
+    ASSR  &amp;= ~(1U &lt;&lt; AS2);
+    TIMSK2 = (1U &lt;&lt; OCIE2A); // enable TIMER2 compare Interrupt
+    TCNT2  = 0U;
+
+    // set the output-compare register based on the desired tick frequency
+    OCR2A  = (F_CPU / BSP_TICKS_PER_SEC / 1024U) - 1U;
+
+    // Configure the rotary knob push button, it has a pull-up on the PCB
+    DDRC &amp;= ~(1 &lt;&lt; DDC1);
+    PORTC &amp;= ~(1 &lt;&lt; DDC1);
+
+    // Enable pin change interrupt on the push-button of the rotary knob
+    PCICR |= _BV(PCIE1);
+    PCMSK1 |= _BV(PCINT9);
+
+    // Enable pin change interrupt on the arm button
+    PCICR |= _BV(PCIE2);
+    PCMSK2 |=_BV(PCINT21);
+
+    // Configure rotary knob pins as inputs, no pull-ups
+    DDRD &amp;= ~((1 &lt;&lt; DDD2) | (1 &lt;&lt; DDD3));
+    PORTD &amp;= ~((1 &lt;&lt; DDD2) | (1 &lt;&lt; DDD3));
+
+    // Enable external interrupts
+    EICRA |= ((1 &lt;&lt; ISC00) | (1 &lt;&lt; ISC01) | (1 &lt;&lt; ISC10) | (1 &lt;&lt; ISC11));
+    EIMSK |= ((1 &lt;&lt; INT0) | (1 &lt;&lt; INT1));
+    sei();
+}
+//............................................................................
+void QV_onIdle(void) {   // called with interrupts DISABLED
+    // Put the CPU and peripherals to the low-power mode. You might
+    // need to customize the clock management for your application,
+    // see the datasheet for your particular AVR MCU.
+    SMCR = (0 &lt;&lt; SM0) | (1 &lt;&lt; SE); // idle mode, adjust to your project
+    QV_CPU_SLEEP();  // atomically go to sleep and enable interrupts
+}
+//............................................................................
+void Q_onAssert(char const Q_ROM * const file, int line) {
+    // implement the error-handling policy for your application!!!
+    display.showNumberDec(114, true);
+    for(;;) {}
+    QF_INT_DISABLE(); // disable all interrupts
+    QF_RESET();  // reset the CPU
+}
+
+//============================================================================
+// define all AO classes...
+$define(AOs::Clock)
+$define(AOs::Computer)
+$define(AOs::ArmButton)</text>
+  </file>
+ </directory>
+</model>
