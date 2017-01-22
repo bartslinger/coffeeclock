@@ -17,8 +17,8 @@
 /*${.::coffeeclock.ino} ....................................................*/
 #include "qpn.h"
 #include "Arduino.h"
-#include <EEPROM.h>
 #include <TM1637Display.h>
+
 
 Q_DEFINE_THIS_MODULE("coffeeclock")
 
@@ -165,7 +165,7 @@ void BSP_displayOff() {
 
 struct serialBuffer {
     char data[SERIAL_BUFFER_SIZE];
-    uint8_t idx = 0;
+    uint8_t idx;
 } sBuf;
 
 void parseByte(uint8_t byte) {
@@ -222,6 +222,8 @@ void parseByte(uint8_t byte) {
 //============================================================================
 // Setup
 void setup() {
+    sBuf.idx = 0;
+
     // initialize the QF-nano framework
     QF_init(Q_DIM(QF_active));
 

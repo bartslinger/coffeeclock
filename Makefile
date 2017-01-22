@@ -7,6 +7,9 @@ MCU           = atmega328p
 F_CPU         = 8000000L
 AVRDUDE_ARD_BAUDRATE = 57600
 
-ARDUINO_LIBS  = qpn_avr TM1637-1.1.0 EEPROM Arduino-CmdMessenger
+ARDUINO_LIBS  = qpn_avr TM1637-1.1.0
+
+# Ignore warning about _progmem_
+CPPFLAGS += -Wno-attributes
 
 include /home/bart/git/Arduino-Makefile/Arduino.mk
