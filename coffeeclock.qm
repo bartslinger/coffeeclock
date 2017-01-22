@@ -393,7 +393,7 @@ QACTIVE_POST_X((QActive *)&amp;AO_Computer, 1U, ARM_BUTTON_PRESS_SIG, 0U);</entr
   </class>
  </package>
  <directory name=".">
-  <file name="coffeeclock.ino">
+  <file name="coffeeclcock.generated">
    <text>#include &quot;qpn.h&quot;
 #include &quot;Arduino.h&quot;
 #include &lt;EEPROM.h&gt;
@@ -696,6 +696,51 @@ void Q_onAssert(char const Q_ROM * const file, int line) {
 $define(AOs::Clock)
 $define(AOs::Computer)
 $define(AOs::ArmButton)</text>
+  </file>
+  <file name="clock.cpp">
+   <text>#include &quot;qpn.h&quot;
+#include &quot;Arduino.h&quot;
+#include &quot;application.h&quot;
+
+$define(AOs::Clock)</text>
+  </file>
+  <file name="computer.cpp">
+   <text>#include &quot;qpn.h&quot;
+#include &quot;Arduino.h&quot;
+#include &quot;application.h&quot;
+
+
+$define(AOs::Computer)</text>
+  </file>
+  <file name="clock.h">
+   <text>#ifndef CLOCK_H
+#define CLOCK_H
+
+$declare(AOs::Clock)
+
+#endif // CLOCK_H</text>
+  </file>
+  <file name="computer.h">
+   <text>#ifndef COMPUTER_H
+#define COMPUTER_H
+
+$declare(AOs::Computer)
+
+#endif // COMPUTER_H</text>
+  </file>
+  <file name="arm_button.cpp">
+   <text>#include &quot;qpn.h&quot;
+#include &quot;application.h&quot;
+
+$define(AOs::ArmButton)</text>
+  </file>
+  <file name="arm_button.h">
+   <text>#ifndef ARM_BUTTON_H
+#define ARM_BUTTON_H
+
+$declare(AOs::ArmButton)
+
+#endif // ARM_BUTTON_H</text>
   </file>
  </directory>
 </model>
