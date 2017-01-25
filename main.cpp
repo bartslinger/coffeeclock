@@ -97,6 +97,21 @@ void checkMasterSwitch() {
     }
 }
 
+void checkLdr() {
+    static uint8_t counter = 0;
+    // Only run at 2 Hz
+    if (counter == 50) {
+        uint16_t value = analogRead(A0);
+        if (value > LDR_ONOFF_THRESHOLD) {
+            QACTIVE_POST_X_ISR((QActive *)&AO_Clock, 1U, TURN_OFF_SIG, value);
+        } else {
+            QACTIVE_POST_X_ISR((QActive *)&AO_Clock, 1U, TURN_ON_SIG, 0U);
+        }
+        counter = 0;
+    }
+    counter++;
+}
+
 //============================================================================
 // Setup
 void setup() {
@@ -141,6 +156,7 @@ ISR(TIMER2_COMPA_vect) {
         parseByte(Serial.read());
     }
     checkMasterSwitch();
+    checkLdr();
 }
 
 volatile bool aFlag = 0U;

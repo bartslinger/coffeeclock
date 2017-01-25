@@ -9,7 +9,7 @@
    <attribute name="time_hours" type="uint8_t" visibility="0x02" properties="0x00"/>
    <attribute name="time_minutes" type="uint8_t" visibility="0x02" properties="0x00"/>
    <statechart>
-    <initial target="../1/6">
+    <initial target="../2">
      <action>/* Obtain alarm time from EEPROM */
 
 //me-&gt;alarm_hours = EEPROM.read(0);
@@ -24,7 +24,7 @@ if (me-&gt;alarm_minutes &gt; 59) me-&gt;alarm_minutes = 59;
 /* Set initial time */
 me-&gt;time_hours = 12U;
 me-&gt;time_minutes = 0U;</action>
-     <initial_glyph conn="102,2,4,1,42,-6">
+     <initial_glyph conn="155,3,4,1,11,-27">
       <action box="0,-2,10,2"/>
      </initial_glyph>
     </initial>
@@ -48,7 +48,7 @@ QACTIVE_POST_X((QActive *)&amp;AO_Clock, 1U, TIME_UPDATED_SIG, 0U);</action>
       </tran_glyph>
      </tran>
      <tran trig="TURN_OFF" target="../../2">
-      <tran_glyph conn="5,122,3,2,119,-108">
+      <tran_glyph conn="5,122,3,2,119,-86">
        <action box="0,-2,17,2"/>
       </tran_glyph>
      </tran>
@@ -250,7 +250,14 @@ BSP_displayTime(me-&gt;time_hours, me-&gt;time_minutes);</entry>
        <action box="0,-2,16,2"/>
       </tran_glyph>
      </tran>
-     <state_glyph node="106,5,22,9">
+     <tran trig="TURN_OFF">
+      <action>//uint16_t param = Q_PAR(me);
+//BSP_checkLdrValue(param);</action>
+      <tran_glyph conn="106,21,3,-1,14">
+       <action box="0,-2,10,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="106,5,22,31">
       <entry box="1,2,13,2"/>
      </state_glyph>
     </state>

@@ -42,7 +42,7 @@ QState Clock_initial(Clock * const me) {
     /* Set initial time */
     me->time_hours = 12U;
     me->time_minutes = 0U;
-    return Q_TRAN(&Clock_disconnected);
+    return Q_TRAN(&Clock_off);
 }
 /*${AOs::Clock::SM::on} ....................................................*/
 QState Clock_on(Clock * const me) {
@@ -418,6 +418,13 @@ QState Clock_off(Clock * const me) {
         /* ${AOs::Clock::SM::off::TURN_ON} */
         case TURN_ON_SIG: {
             status_ = Q_TRAN(&Clock_disconnected);
+            break;
+        }
+        /* ${AOs::Clock::SM::off::TURN_OFF} */
+        case TURN_OFF_SIG: {
+            //uint16_t param = Q_PAR(me);
+            //BSP_checkLdrValue(param);
+            status_ = Q_HANDLED();
             break;
         }
         default: {

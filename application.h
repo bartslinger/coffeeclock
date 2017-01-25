@@ -20,6 +20,7 @@ enum CoffeeClockSignals {
     COMPUTER_DISCONNECTED_SIG,
     TURN_ON_SIG,
     TURN_OFF_SIG,
+    CHECK_LDR_VALUE_SIG,
     ARM_BUTTON_PRESS_SIG,
     ARM_BUTTON_RELEASE_SIG,
     ALARM_SET_SIG,
@@ -42,6 +43,7 @@ enum {
     COMPUTER_SIGNAL_TIMEOUT = (unsigned int)(BSP_TICKS_PER_SEC*1.5),
     ARM_BUTTON_TIMEOUT = (unsigned int)(BSP_TICKS_PER_SEC*0.1),
     SERIAL_BUFFER_SIZE = 30,
+    LDR_ONOFF_THRESHOLD = 900,
 };
 
 void BSP_displayTime(uint8_t hours, uint8_t minutes);
@@ -55,5 +57,7 @@ void BSP_displayDashes();
 void BSP_displayOff();
 
 void BSP_displayEnable();
+
+void BSP_checkLdrValue(uint16_t analogIn);
 
 #endif // APPLICATION_H

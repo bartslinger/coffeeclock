@@ -1,7 +1,7 @@
 #include "qpn.h"
 #include "application.h"
+#include "Arduino.h"
 #include <TM1637Display.h>
-
 
 static TM1637Display display(11, 10);
 
@@ -31,4 +31,8 @@ void BSP_displayOff() {
 
 void BSP_displayEnable() {
     display.setBrightness(0x0f);
+}
+
+void BSP_checkLdrValue(uint16_t analogIn) {
+    display.showNumberDec(analogIn);
 }
