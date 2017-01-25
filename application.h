@@ -1,9 +1,9 @@
 #ifndef APPLICATION_H
 #define APPLICATION_H
 
-#include "clock.h"
-#include "computer.h"
-#include "arm_button.h"
+#include "ao_clock.h"
+#include "ao_computer.h"
+#include "ao_arm_button.h"
 
 extern Clock        AO_Clock;
 extern Computer     AO_Computer;
@@ -53,5 +53,7 @@ void BSP_displayHideMinutes();
 void BSP_displayDashes();
 
 void BSP_displayOff();
+
+void BSP_displayEnable();
 
 #endif // APPLICATION_H
