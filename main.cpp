@@ -82,6 +82,21 @@ void parseByte(uint8_t byte) {
     }
 }
 
+// Called from interrupt
+void checkMasterSwitch() {
+    static uint8_t previous_position = HIGH;
+    uint8_t current_position = digitalRead(SWITCH_ONOFF);
+    if (current_position != previous_position) {
+        // Toggle!
+        if (current_position == HIGH) {
+            QACTIVE_POST_X_ISR((QActive *)&AO_Clock, 1U, TURN_OFF_SIG, 0U);
+        } else {
+            QACTIVE_POST_X_ISR((QActive *)&AO_Clock, 1U, TURN_ON_SIG, 0U);
+        }
+        previous_position = current_position;
+    }
+}
+
 //============================================================================
 // Setup
 void setup() {
@@ -125,8 +140,7 @@ ISR(TIMER2_COMPA_vect) {
     while (Serial.available() > 0) {
         parseByte(Serial.read());
     }
-//    digitalWrite(LED_ACTIVATED, !digitalRead(SWITCH_ACTIVATE));
-//    digitalWrite(LED_CONNECTED, digitalRead(SWITCH_ONOFF));
+    checkMasterSwitch();
 }
 
 volatile bool aFlag = 0U;
