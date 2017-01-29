@@ -1,3 +1,5 @@
+bsp.cpp
+bsp.h
 main.cpp
 ao_arm_button.cpp
 ao_arm_button.h
@@ -9,6 +11,5 @@ application.h
 coffeeclock.config
 coffeeclock.files
 coffeeclock.includes
-display.cpp
 Makefile
 README.md

@@ -4,6 +4,7 @@
 #include "ao_clock.h"
 #include "ao_computer.h"
 #include "ao_arm_button.h"
+#include "bsp.h"
 
 extern Clock        AO_Clock;
 extern Computer     AO_Computer;
@@ -31,7 +32,6 @@ enum CoffeeClockSignals {
 //============================================================================
 // various constants for the application...
 enum {
-    BSP_TICKS_PER_SEC = 100, // number of system clock ticks in one second
     SWITCH_ACTIVATE = 5,     // D5 = PD5
     SWITCH_ONOFF = 12,       // D12 = PB4
     LED_ACTIVATED = 6,
@@ -45,19 +45,5 @@ enum {
     SERIAL_BUFFER_SIZE = 30,
     LDR_ONOFF_THRESHOLD = 900,
 };
-
-void BSP_displayTime(uint8_t hours, uint8_t minutes);
-
-void BSP_displayHideHours();
-
-void BSP_displayHideMinutes();
-
-void BSP_displayDashes();
-
-void BSP_displayOff();
-
-void BSP_displayEnable();
-
-void BSP_checkLdrValue(uint16_t analogIn);
 
 #endif // APPLICATION_H
