@@ -44,6 +44,7 @@ enum {
     ARM_BUTTON_TIMEOUT = (unsigned int)(BSP_TICKS_PER_SEC*0.1),
     SERIAL_BUFFER_SIZE = 30,
     LDR_ONOFF_THRESHOLD = 900,
+    MS_BRIEF_WAIT_TIME = min((unsigned int)(BSP_TICKS_PER_SEC*0.01), 1)
 };
 
 #endif // APPLICATION_H

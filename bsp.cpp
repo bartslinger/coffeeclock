@@ -36,3 +36,8 @@ void BSP_displayEnable() {
 void BSP_checkLdrValue(uint16_t analogIn) {
     display.showNumberDec(analogIn);
 }
+
+void BSP_LedControl(uint8_t led, uint8_t value)
+{
+    digitalWrite(led, value);
+}

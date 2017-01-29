@@ -43,7 +43,7 @@ QACTIVE_POST_X((QActive *)&amp;AO_Clock, 1U, TIME_UPDATED_SIG, 0U);</action>
       </tran_glyph>
      </tran>
      <tran trig="COMPUTER_DISCONNECTED" target="../6">
-      <tran_glyph conn="5,119,3,2,66,-61,18,-5">
+      <tran_glyph conn="5,119,3,2,84,-66">
        <action box="0,-2,21,2"/>
       </tran_glyph>
      </tran>
@@ -65,8 +65,8 @@ me-&gt;alarm_hours = hours;</action>
       </tran_glyph>
      </tran>
      <state name="alarm">
-      <entry>digitalWrite(LED_ALARM, HIGH);</entry>
-      <exit>digitalWrite(LED_ALARM, LOW);</exit>
+      <entry>BSP_LedControl(LED_ALARM, HIGH);</entry>
+      <exit>BSP_LedControl(LED_ALARM, LOW);</exit>
       <state name="set_minutes">
        <exit>BSP_displayTime(me-&gt;alarm_hours, me-&gt;alarm_minutes);</exit>
        <tran trig="ROTARY_PUSH" target="../../1">
@@ -211,9 +211,9 @@ BSP_displayHideHours();</entry>
       </state_glyph>
      </state>
      <state name="time">
-      <entry>digitalWrite(LED_TIME, HIGH);
+      <entry>BSP_LedControl(LED_TIME, HIGH);
 BSP_displayTime(me-&gt;time_hours, me-&gt;time_minutes);</entry>
-      <exit>digitalWrite(LED_TIME, LOW);</exit>
+      <exit>BSP_LedControl(LED_TIME, LOW);</exit>
       <tran trig="ROTARY_PUSH" target="../../4/2/3">
        <tran_glyph conn="63,21,3,1,-7,8,-20">
         <action box="0,-2,12,2"/>
@@ -398,6 +398,55 @@ QACTIVE_POST_X((QActive *)&amp;AO_Computer, 1U, ARM_BUTTON_PRESS_SIG, 0U);</entr
     <state_diagram size="80,50"/>
    </statechart>
   </class>
+  <class name="MasterSwitch" superclass="qpn::QActive">
+   <statechart>
+    <initial target="../3">
+     <initial_glyph conn="61,14,4,1,5,-2">
+      <action box="0,-2,10,2"/>
+     </initial_glyph>
+    </initial>
+    <state name="on">
+     <tran trig="MS_CHANGE" target="../../3">
+      <tran_glyph conn="24,18,1,3,20">
+       <action box="0,-2,20,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="10,14,14,10"/>
+    </state>
+    <state name="off">
+     <tran trig="MS_CHANGE" target="../../3">
+      <tran_glyph conn="24,36,1,2,32,-12">
+       <action box="0,-2,10,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="10,27,14,11"/>
+    </state>
+    <state name="wait briefly">
+     <entry>QActive_armX(&amp;me-&gt;super, 0U, MS_BRIEF_WAIT_TIME, 0U);</entry>
+     <tran trig="Q_TIMEOUT">
+      <choice target="../../../1">
+       <guard>BSP_isMasterSwitchOn()</guard>
+       <choice_glyph conn="40,29,5,1,-11,-9,-5">
+        <action box="-11,-4,20,2"/>
+       </choice_glyph>
+      </choice>
+      <choice target="../../../2">
+       <guard>else</guard>
+       <choice_glyph conn="40,29,4,1,3,-16">
+        <action box="1,2,6,2"/>
+       </choice_glyph>
+      </choice>
+      <tran_glyph conn="44,21,3,-1,-4,8">
+       <action box="0,-2,10,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="44,14,15,10">
+      <entry box="1,2,6,2"/>
+     </state_glyph>
+    </state>
+    <state_diagram size="80,50"/>
+   </statechart>
+  </class>
  </package>
  <directory name=".">
   <file name="ao_clock.cpp">
@@ -444,6 +493,20 @@ $define(AOs::ArmButton)</text>
 $declare(AOs::ArmButton)
 
 #endif // ARM_BUTTON_H</text>
+  </file>
+  <file name="ao_masterswitch.cpp">
+   <text>#include &quot;qpn.h&quot;
+#include &quot;application.h&quot;
+
+$define(AOs::MasterSwitch)</text>
+  </file>
+  <file name="ao_masterswitch.h">
+   <text>#ifndef MASTER_SWITCH_H
+#define MASTER_SWITCH_H
+
+$declare(AOs::MasterSwitch)
+
+#endif // MASTER_SWITCH_H</text>
   </file>
  </directory>
 </model>

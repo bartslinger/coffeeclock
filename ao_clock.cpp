@@ -96,13 +96,13 @@ QState Clock_alarm(Clock * const me) {
     switch (Q_SIG(me)) {
         /* ${AOs::Clock::SM::on::alarm} */
         case Q_ENTRY_SIG: {
-            digitalWrite(LED_ALARM, HIGH);
+            BSP_LedControl(LED_ALARM, HIGH);
             status_ = Q_HANDLED();
             break;
         }
         /* ${AOs::Clock::SM::on::alarm} */
         case Q_EXIT_SIG: {
-            digitalWrite(LED_ALARM, LOW);
+            BSP_LedControl(LED_ALARM, LOW);
             status_ = Q_HANDLED();
             break;
         }
@@ -354,14 +354,14 @@ QState Clock_time(Clock * const me) {
     switch (Q_SIG(me)) {
         /* ${AOs::Clock::SM::on::time} */
         case Q_ENTRY_SIG: {
-            digitalWrite(LED_TIME, HIGH);
+            BSP_LedControl(LED_TIME, HIGH);
             BSP_displayTime(me->time_hours, me->time_minutes);
             status_ = Q_HANDLED();
             break;
         }
         /* ${AOs::Clock::SM::on::time} */
         case Q_EXIT_SIG: {
-            digitalWrite(LED_TIME, LOW);
+            BSP_LedControl(LED_TIME, LOW);
             status_ = Q_HANDLED();
             break;
         }
